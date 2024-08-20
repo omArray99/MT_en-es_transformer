@@ -2,7 +2,7 @@ import torch
 
 # import torch.nn as nn
 from torch.utils.data import Dataset
-from typing import Any
+from typing import Any,List
 
 
 class LanguagePairDataset(Dataset):
@@ -37,30 +37,33 @@ class LanguagePairDataset(Dataset):
         self.pad_tkn = torch.tensor(
             [tokenizer_src.token_to_id("<pad>")], dtype=torch.int64
         )
+        self.data = [
+            entry for entry in dataset
+            if len(tokenizer_src.encode(entry['translation'][src_lang]).ids) <= seq_len - 2
+            and len(tokenizer_tgt.encode(entry['translation'][tgt_lang]).ids) <= seq_len - 1
+        ]
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.data)
 
     def __getitem__(self, index: Any):
+        entry = self.data[index]
         # Fetch source and target texts from the dataset
-        src_txt = self.dataset[index]["translation"][self.src_lang]
-        tgt_txt = self.dataset[index]["translation"][self.tgt_lang]
+        src_txt = entry["translation"][self.src_lang]
+        tgt_txt = entry["translation"][self.tgt_lang]
 
         # Tokenization
         encoder_input_tkns = self.tokenizer_src.encode(src_txt).ids
         decoder_input_tkns = self.tokenizer_tgt.encode(tgt_txt).ids
 
         # Prepare encoder and decoder inputs with special tokens
-        encoder_req_pad_tkns = (
-            self.seq_len - len(encoder_input_tkns) - 2
-        )  # '-2' for <sos> and <eos> tokens
+        encoder_padding  = self.seq_len - len(encoder_input_tkns) - 2 # '-2' for <sos> and <eos> tokens
+        decoder_padding  = self.seq_len - len(decoder_input_tkns) - 1
 
-        decoder_req_pad_tkns = self.seq_len - len(decoder_input_tkns) - 1
-
-        if encoder_req_pad_tkns < 0 or decoder_req_pad_tkns < 0:
-            raise ValueError(
-                "The sequence length after tokenization exceeds the maximum sequence length"
-            )
+        # if encoder_req_pad_tkns < 0 or decoder_req_pad_tkns < 0:
+        #     raise ValueError(
+        #         "The sequence length after tokenization exceeds the maximum sequence length"
+        #     )
 
         # Create encoder input tensor
         # Added <sos>,<eos> and <pad> tokens
@@ -69,7 +72,7 @@ class LanguagePairDataset(Dataset):
                 self.sos_tkn,
                 torch.tensor(encoder_input_tkns, dtype=torch.int64),
                 self.eos_tkn,
-                torch.tensor([self.pad_tkn] * encoder_req_pad_tkns, dtype=torch.int64),
+                torch.full((encoder_padding,), self.pad_tkn.item(), dtype=torch.int64)
             ],
             dim=0,
         )
@@ -80,7 +83,7 @@ class LanguagePairDataset(Dataset):
             [
                 self.sos_tkn,
                 torch.tensor(decoder_input_tkns, dtype=torch.int64),
-                torch.tensor([self.pad_tkn] * decoder_req_pad_tkns, dtype=torch.int64),
+                torch.full((decoder_padding,), self.pad_tkn.item(), dtype=torch.int64)
             ],
             dim=0,
         )
@@ -91,20 +94,20 @@ class LanguagePairDataset(Dataset):
             [
                 torch.tensor(decoder_input_tkns, dtype=torch.int64),
                 self.eos_tkn,
-                torch.tensor([self.pad_tkn] * decoder_req_pad_tkns, dtype=torch.int64),
+                torch.full((decoder_padding,), self.pad_tkn.item(), dtype=torch.int64)
             ],
             dim=0,
         )
 
-        assert (
-            encoder_input.size(0) == self.seq_len
-        ), f"Encoder input length mismatch: {encoder_input.size(0)} != {self.seq_len}"
-        assert (
-            decoder_input.size(0) == self.seq_len
-        ), f"Decoder input length mismatch: {decoder_input.size(0)} != {self.seq_len}"
-        assert (
-            target.size(0) == self.seq_len
-        ), f"Target length mismatch: {target.size(0)} != {self.seq_len}"
+        # assert (
+        #     encoder_input.size(0) == self.seq_len
+        # ), f"Encoder input length mismatch: {encoder_input.size(0)} != {self.seq_len}"
+        # assert (
+        #     decoder_input.size(0) == self.seq_len
+        # ), f"Decoder input length mismatch: {decoder_input.size(0)} != {self.seq_len}"
+        # assert (
+        #     target.size(0) == self.seq_len
+        # ), f"Target length mismatch: {target.size(0)} != {self.seq_len}"
 
         return {
             "encoder_input": encoder_input,  # (seq_len)
