@@ -8,7 +8,7 @@ def fetch_configuration():
     """
     return {
         "hidden_size": 512,
-        "seq_len": 800,
+        "seq_len": 350,
         "attention_dropout": 0.1,
         "intermediate_size": 2048,
         "num_attention_heads": 8,
