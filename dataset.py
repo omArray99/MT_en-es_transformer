@@ -124,8 +124,8 @@ class LanguagePairDataset(Dataset):
             .int()
             & generate_causal_mask(self.seq_len),
             "target": target,  # (seq_len)
-            # "src_txt" : src_txt,
-            # "tgt_txt" : tgt_txt
+            "src_text" : src_txt,
+            "tgt_text" : tgt_txt
         }
 
 
