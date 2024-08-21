@@ -34,7 +34,7 @@ def construct_model_path(config, epoch: str):
     # directory_path = Path(".") / f"{config['data_source']}_{config['model_dir']}"
     directory_path = f"{config['model_dir']}"
     filename = f"{config['model_name_prefix']}{epoch}.pt"
-    return str(directory_path / filename)
+    return str(Path('.') / directory_path / filename)
 
 
 def latest_model_path(config):
