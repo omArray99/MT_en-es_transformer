@@ -31,13 +31,15 @@ def construct_model_path(config, epoch: str):
     """
     Constructs a file path for storing or retrieving a model based on the epoch.
     """
-    directory_path = Path(".") / f"{config['data_source']}_{config['model_dir']}"
+    # directory_path = Path(".") / f"{config['data_source']}_{config['model_dir']}"
+    directory_path = f"{config['model_dir']}"
     filename = f"{config['model_name_prefix']}{epoch}.pt"
     return str(directory_path / filename)
 
 
 def latest_model_path(config):
-    model_folder = f"{config['data_source']}_{config['model_dir']}"
+    # model_folder = f"{config['data_source']}_{config['model_dir']}"
+    model_folder = f"{config['model_dir']}"
     filename = f"{config['model_name_prefix']}*"
     weights_files = list(Path(model_folder).glob(filename))
     if len(weights_files) == 0:
